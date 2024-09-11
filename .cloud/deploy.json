@@ -1,0 +1,95 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.9S",
+    "parameters": {
+        "location": {
+            "type": "string",
+            "defaultValue": "[resourceGroup().location]"
+        },
+        "hubName": {
+            "type": "string",
+            "defaultValue": "hub-azurei-x-arize-dev"
+        },
+        "projectName": {
+            "type": "string",
+            "defaultValue": "intelligent-apps"
+        },
+        "modelIds": {
+            "type": "array",
+            "defaultValue": [
+                "azureml://registries/azureml-cohere/models/Cohere-command-r-plus",
+                "azureml://registries/azureml-cohere/models/Cohere-embed-v3-multilingual",
+                "azureml://registries/azureml-mistral/models/Mistral-large",
+                "azureml://registries/azureml-mistral/models/Mistral-small",
+                "azureml://registries/azureml/models/Phi-3-mini-4k-instruct"
+            ],
+            "metadata": {
+                "description": "The models to deploy in the project"
+            }
+        }
+    },
+    "variables": {
+        "resourceGroupName": "[resourceGroup().name]"
+    },
+    "resources": [
+        {
+            "type": "Microsoft.Resources/deployments",
+            "name": "projectHub",
+            "resourceGroup": "[variables('resourceGroupName')]",
+            "apiVersion": "2024-03-01",
+            "properties": {
+                "mode": "Incremental",
+                "templateLink": {
+                    "uri": "https://raw.githubusercontent.com/santiagxf/azureai-x-arize/main/.cloud/templates/project-hub-template.json"
+                },
+                "parameters": {
+                    "hubName": {
+                        "value": "[parameters('hubName')]"
+                    },
+                    "projectName": {
+                        "value": "[parameters('projectName')]"
+                    }
+                }
+            }
+        },
+        {
+            "type": "Microsoft.Resources/deployments",
+            "name": "[concat('deployment-models-', copyIndex())]",
+            "resourceGroup": "[variables('resourceGroupName')]",
+            "apiVersion": "2024-03-01",
+            "copy": {
+                "name": "deploymentLoop",
+                "count": "[length(parameters('modelIds'))]"
+            },
+            "dependsOn": [
+                "projectHub"
+            ],
+            "properties": {
+                "mode": "Incremental",
+                "templateLink": {
+                    "uri": "https://raw.githubusercontent.com/santiagxf/azureai-x-arize/main/.cloud/templates/servereless-endpoint-template.json"
+                },
+                "parameters": {
+                    "projectName": {
+                        "value": "[parameters('projectName')]"
+                    },
+                    "endpointName": {
+                        "value": "[concat(substring(parameters('modelIds')[copyIndex()], add(lastIndexOf(parameters('modelIds')[copyIndex()], '/'),1)), '-', substring(uniqueString(resourceGroup().id),0,5))]"
+                    },
+                    "location": {
+                        "value": "[parameters('location')]"
+                    },
+                    "modelId": {
+                        "value": "[parameters('modelIds')[copyIndex()]]"
+                    }
+                }
+            }
+        }
+    ],
+    "outputs": {
+        "endpoints": {
+            "type": "string",
+            "value": "[reference('deployment-models-0').outputs.endpointUri.value]"
+        }
+    }
+}

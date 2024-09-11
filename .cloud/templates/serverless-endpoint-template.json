@@ -1,0 +1,60 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "projectName": {
+            "defaultValue": "intelligent-apps",
+            "type": "String"
+        },
+        "endpointName": {
+            "defaultValue": "myserverless-text-1234ss",
+            "type": "String"
+        },
+        "location": {
+            "type": "String",
+            "defaultValue": "[resourceGroup().location]"
+        },
+        "modelId": {
+            "type": "String",
+            "defaultValue": "azureml://registries/azureml-mistral/models/Mistral-large"
+        }
+    },
+    "variables": {
+        "modelName": "[substring(parameters('modelId'), add(lastIndexOf(parameters('modelId'), '/'),1))]",
+        "subscriptionName": "[concat(variables('modelName'), '-subscription')]"
+    },
+    "resources": [
+        {
+            "type": "Microsoft.MachineLearningServices/workspaces/marketplaceSubscriptions",
+            "apiVersion": "2024-04-01-preview",
+            "name": "[concat(parameters('projectName'), '/', variables('subscriptionName'))]",
+            "condition": "[not(startsWith(parameters('modelId'), 'azureml://registries/azureml/'))]",
+            "properties": {
+                "modelId": "[parameters('modelId')]"
+            }
+        },
+        {
+            "type": "Microsoft.MachineLearningServices/workspaces/serverlessEndpoints",
+            "apiVersion": "2024-04-01-preview",
+            "name": "[concat(parameters('projectName'), '/', parameters('endpointName'))]",
+            "location": "[parameters('location')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.MachineLearningServices/workspaces/marketplaceSubscriptions/', parameters('projectName'), variables('subscriptionName'))]"
+            ],
+            "sku": {
+                "name": "Consumption"
+            },
+            "properties": {
+                "modelSettings": {
+                    "modelId": "[parameters('modelId')]"
+                }
+            }
+        }
+    ],
+    "outputs": {
+        "endpointUri": {
+            "type": "string",
+            "value": "[reference(resourceId('Microsoft.MachineLearningServices/workspaces/serverlessEndpoints/', parameters('projectName'), parameters('endpointName'))).inferenceEndpoint.uri]"
+        }
+    }
+}

@@ -1,0 +1,14 @@
+langchain-core
+promptflow-tracing[azure]
+azure-ai-inference
+azure-identity
+pandas
+numpy
+ipykernel
+jupyter
+python-dotenv
+llama_index
+llama-index-llms-azure-inference
+llama-index-embeddings-azure-inference
+spacy
+chainlit

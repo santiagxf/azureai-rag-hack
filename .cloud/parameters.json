@@ -1,0 +1,24 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "location": {
+            "value": "eastus2"
+        },
+        "hubName": {
+            "value": "hub-azurei-x-arize-dev"
+        },
+        "projectName": {
+            "value": "intelligent-apps"
+        },
+        "models": {
+            "value": [
+                "azureml://registries/azureml-cohere/models/Cohere-command-r-plus",
+                "azureml://registries/azureml-cohere/models/Cohere-embed-v3-multilingual",
+                "azureml://registries/azureml-mistral/models/Mistral-large",
+                "azureml://registries/azureml-mistral/models/Mistral-small",
+                "azureml://registries/azureml/models/Phi-3-mini-4k-instruct"
+            ]
+        }
+    }
+}
